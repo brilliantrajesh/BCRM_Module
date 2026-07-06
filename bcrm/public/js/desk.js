@@ -1,7 +1,15 @@
 (function () {
     "use strict";
 
-    var HIDE_LABELS = ["Edit Profile", "Toggle Theme", "About", "Frappe Support", "Reset to Default"];
+    var HIDE_LABELS = [
+        "Edit Profile",
+        "Toggle Theme",
+        "About",
+        "Frappe Support",
+        "Reset to Default",
+        "Reset Desktop Layout",
+        "Manage Billing"
+    ];
 
     function hide_items_in(menu) {
         menu.querySelectorAll(".dropdown-menu-item").forEach(function (item) {
