@@ -36,7 +36,7 @@ window.BCRM_Agent = window.BCRM_Agent || {};
 window.BCRM_Agent.open_ultraviewer = function () {
     return fetch("http://127.0.0.1:5000/open", {
         method: "GET",
-        signal: AbortSignal.timeout(5000)
+        signal: AbortSignal.timeout(30000)
     }).then(function (response) {
         return response.json().then(function (data) {
             if (!response.ok || data.status !== "success") {
