@@ -250,8 +250,7 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 app_include_js = [
-    "/assets/bcrm/js/desk.js",
-    "/assets/bcrm/js/btpl_app_version.js",
+    "/assets/bcrm/js/desk.js"
 ]
 app_include_css = ["/assets/bcrm/css/desk.css"]
 
