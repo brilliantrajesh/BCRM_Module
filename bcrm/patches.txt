@@ -5,3 +5,4 @@
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 bcrm.patches.set_bcrm_website_title
+bcrm.patches.add_app_version_custom_field
