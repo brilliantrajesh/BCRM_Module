@@ -59,3 +59,80 @@ window.BCRM_Agent.is_running = function () {
         return false;
     });
 };
+
+/* BCRM Common App Version */
+(function () {
+    "use strict";
+
+    var BTPL_APP_USER = "tracker@brillianttechnologies.com";
+    var VERSION_LABEL_ID = "bcrm-common-app-version";
+    var VERSION_VALUE_ID = "bcrm-common-app-version-value";
+
+    function get_user_area() {
+        return document.querySelector(".avatar-name-email");
+    }
+
+    function render_app_version(version) {
+        var clean_version = String(version || "").trim();
+        var user_area = get_user_area();
+
+        if (!clean_version || !user_area) {
+            return;
+        }
+
+        var version_element =
+            document.getElementById(VERSION_LABEL_ID);
+
+        if (!version_element) {
+            version_element = document.createElement("span");
+            version_element.id = VERSION_LABEL_ID;
+            version_element.className =
+                "text-secondary text-truncate";
+
+            version_element.style.cssText =
+                "display:block;margin-top:2px;font-size:10px;";
+
+            version_element.innerHTML =
+                'BTPL Ver <span id="' +
+                VERSION_VALUE_ID +
+                '"></span>';
+
+            user_area.appendChild(version_element);
+        }
+
+        var version_value =
+            document.getElementById(VERSION_VALUE_ID);
+
+        if (version_value) {
+            version_value.textContent = clean_version;
+        }
+    }
+
+    function load_app_version() {
+        frappe.db.get_value(
+            "User",
+            BTPL_APP_USER,
+            "custom_app_version"
+        ).then(function (response) {
+            var version =
+                response && response.message
+                    ? response.message.custom_app_version
+                    : null;
+
+            render_app_version(version);
+        });
+    }
+
+    // Initial version load
+    load_app_version();
+
+    // Silent update for all connected users
+    frappe.realtime.on(
+        "bcrm_app_version_updated",
+        function (data) {
+            if (data && data.version) {
+                render_app_version(data.version);
+            }
+        }
+    );
+})();

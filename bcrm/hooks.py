@@ -257,3 +257,8 @@ app_include_css = ["/assets/bcrm/css/desk.css"]
 fixtures = [
     {"dt": "Navbar Settings"}
 ]
+doc_events = {
+    "User": {
+        "on_update": "bcrm.api.app_version.user_version_updated"
+    }
+}
