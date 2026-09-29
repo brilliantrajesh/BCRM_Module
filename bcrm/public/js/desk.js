@@ -109,17 +109,10 @@ window.BCRM_Agent.is_running = function () {
     }
 
     function load_app_version() {
-        frappe.db.get_value(
-            "User",
-            BTPL_APP_USER,
-            "custom_app_version"
-        ).then(function (response) {
-            var version =
-                response && response.message
-                    ? response.message.custom_app_version
-                    : null;
-
-            render_app_version(version);
+        frappe.call({
+            method: "bcrm.api.app_version.get_app_version"
+        }).then(function (response) {
+            render_app_version(response.message);
         });
     }
 

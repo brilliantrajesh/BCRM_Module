@@ -1,8 +1,20 @@
 import frappe
 
 
+BTPL_APP_USER = "tracker@brillianttechnologies.com"
+
+
+@frappe.whitelist()
+def get_app_version():
+    return frappe.db.get_value(
+        "User",
+        BTPL_APP_USER,
+        "custom_app_version"
+    ) or ""
+
+
 def user_version_updated(doc, method=None):
-    if doc.email != "tracker@brillianttechnologies.com":
+    if doc.email != BTPL_APP_USER:
         return
 
     frappe.publish_realtime(
