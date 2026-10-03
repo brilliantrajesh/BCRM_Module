@@ -146,18 +146,40 @@ def download_vcrm_attachment(
             else ""
         )
 
-        csrf_marker = 'name="__vtrftk"'
+        # =========================================================
+        # FIND __vtrftk
+        # VCRM may use single OR double quotes.
+        # The current VCRM login page uses:
+        # name='__vtrftk' value="sid:..."
+        # =========================================================
+
         csrf_position = login_html.find(
-            csrf_marker
+            'name="__vtrftk"'
         )
+
+        if csrf_position < 0:
+            csrf_position = login_html.find(
+                "name='__vtrftk'"
+            )
 
         if csrf_position >= 0:
 
             value_marker = 'value="'
+            value_quote = '"'
+
             value_position = login_html.find(
                 value_marker,
                 csrf_position
             )
+
+            if value_position < 0:
+                value_marker = "value='"
+                value_quote = "'"
+
+                value_position = login_html.find(
+                    value_marker,
+                    csrf_position
+                )
 
             if value_position >= 0:
 
@@ -167,14 +189,75 @@ def download_vcrm_attachment(
                 )
 
                 value_end = login_html.find(
-                    '"',
+                    value_quote,
                     value_start
                 )
 
                 if value_end >= 0:
+
                     csrf_token = (
                         login_html[
                             value_start:value_end
+                        ]
+                    ).strip()
+
+        # =========================================================
+        # FALLBACK
+        # Vtiger also exposes the same token in JS:
+        # csrfMagicToken = "sid:..."
+        # =========================================================
+
+        if not csrf_token:
+
+            js_marker = 'csrfMagicToken = "'
+            js_position = login_html.find(
+                js_marker
+            )
+
+            if js_position >= 0:
+
+                token_start = (
+                    js_position
+                    + len(js_marker)
+                )
+
+                token_end = login_html.find(
+                    '"',
+                    token_start
+                )
+
+                if token_end >= 0:
+
+                    csrf_token = (
+                        login_html[
+                            token_start:token_end
+                        ]
+                    ).strip()
+
+        if not csrf_token:
+
+            js_marker = "csrfMagicToken = '"
+            js_position = login_html.find(
+                js_marker
+            )
+
+            if js_position >= 0:
+
+                token_start = (
+                    js_position
+                    + len(js_marker)
+                )
+
+                token_end = login_html.find(
+                    "'",
+                    token_start
+                )
+
+                if token_end >= 0:
+
+                    csrf_token = (
+                        login_html[
+                            token_start:token_end
                         ]
                     ).strip()
 
@@ -186,6 +269,18 @@ def download_vcrm_attachment(
                 "VCRM login page did not provide "
                 "the __vtrftk CSRF token."
             )
+            result["csrf_debug"] = {
+                "html_size": len(login_html),
+                "has_vtrftk_name_double": (
+                    'name="__vtrftk"' in login_html
+                ),
+                "has_vtrftk_name_single": (
+                    "name='__vtrftk'" in login_html
+                ),
+                "has_csrf_magic_token": (
+                    "csrfMagicToken" in login_html
+                )
+            }
             return result
 
         login_data = {
@@ -439,6 +534,101 @@ def download_vcrm_attachment(
 
         # =========================================================
         # STEP 8
+        # RESOLVE FILE ID IF NOT PROVIDED
+        #
+        # For the VCRM test document:
+        # document 33 -> fileid 34
+        #
+        # When file_id is empty, read the authenticated
+        # Documents detail HTML and find the DownloadFile link.
+        # =========================================================
+
+        if not str(file_id or "").strip():
+
+            discovered_file_id = ""
+
+            download_marker = (
+                "DownloadFile"
+            )
+
+            search_position = 0
+
+            while True:
+
+                marker_position = detail_html.find(
+                    download_marker,
+                    search_position
+                )
+
+                if marker_position < 0:
+                    break
+
+                fileid_position = detail_html.find(
+                    "fileid=",
+                    marker_position
+                )
+
+                if fileid_position >= 0:
+
+                    value_start = (
+                        fileid_position
+                        + len("fileid=")
+                    )
+
+                    while (
+                        value_start < len(detail_html)
+                        and detail_html[value_start] in (
+                            '"',
+                            "'"
+                        )
+                    ):
+                        value_start += 1
+
+                    value_end = value_start
+
+                    while (
+                        value_end < len(detail_html)
+                        and detail_html[value_end].isdigit()
+                    ):
+                        value_end += 1
+
+                    candidate = detail_html[
+                        value_start:value_end
+                    ].strip()
+
+                    if candidate:
+                        discovered_file_id = candidate
+                        break
+
+                search_position = (
+                    marker_position
+                    + len(download_marker)
+                )
+
+            if discovered_file_id:
+                file_id = discovered_file_id
+                result["file_id"] = str(file_id)
+            else:
+                result["status"] = (
+                    "file_id_not_found"
+                )
+                result["message"] = (
+                    "VCRM document detail was opened, "
+                    "but the attachment file ID could "
+                    "not be found."
+                )
+                result["file_id_search"] = {
+                    "download_marker_found": (
+                        "DownloadFile" in detail_html
+                    ),
+                    "detail_html_size": len(
+                        detail_html
+                    )
+                }
+                return result
+
+        # =========================================================
+        # STEP 9
         # ACTUAL DOCUMENT DOWNLOAD
         #
         # CONFIRMED FOR TEST DOCUMENT:
@@ -491,7 +681,7 @@ def download_vcrm_attachment(
             return result
 
         # =========================================================
-        # STEP 9
+        # STEP 10
         # DOWNLOAD RESPONSE METADATA
         # =========================================================
 
@@ -515,7 +705,7 @@ def download_vcrm_attachment(
         )
 
         # =========================================================
-        # STEP 10
+        # STEP 11
         # HTTP VALIDATION
         # =========================================================
 
@@ -540,7 +730,7 @@ def download_vcrm_attachment(
             return result
 
         # =========================================================
-        # STEP 11
+        # STEP 12
         # HTML / LOGIN RESPONSE DETECTION
         # =========================================================
 
@@ -584,7 +774,7 @@ def download_vcrm_attachment(
             return result
 
         # =========================================================
-        # STEP 12
+        # STEP 13
         # SUCCESS
         # =========================================================
 
