@@ -144,13 +144,14 @@ def download_vcrm_attachment(
             + "/index.php"
         )
 
-        login_data = {
+                login_data = {
             "module": "Users",
             "action": "Authenticate",
             "return_module": "Users",
             "return_action": "Login",
             "user_name": username,
-            "user_password": password
+            "user_password": password,
+            "Login": "Login"
         }
 
         try:
@@ -158,7 +159,8 @@ def download_vcrm_attachment(
                 authenticate_url,
                 data=login_data,
                 headers={
-                    "Referer": login_page.url
+                    "Referer": login_page.url,
+                    "Origin": vcrm_url
                 },
                 verify=False,
                 timeout=30,
@@ -185,7 +187,6 @@ def download_vcrm_attachment(
             )
             result["login_error"] = str(e)
             return result
-
         # =========================================================
         # STEP 3
         # SESSION COOKIE
