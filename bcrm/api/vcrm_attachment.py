@@ -25,28 +25,8 @@ def download_vcrm_attachment(
     }
 
     try:
-
         # =========================================================
-        # 1. VALIDATE
-        # =========================================================
-
-        if not document_id:
-            result["status"] = "missing_document_id"
-            result["message"] = "VCRM document ID is required."
-            return result
-
-        if not file_id:
-            result["status"] = "missing_file_id"
-            result["message"] = "VCRM file ID is required."
-            return result
-
-        if not file_name:
-            result["status"] = "missing_file_name"
-            result["message"] = "VCRM file name is required."
-            return result
-
-        # =========================================================
-        # 2. SETTINGS
+        # SETTINGS
         # =========================================================
 
         settings = frappe.get_doc(
@@ -60,9 +40,7 @@ def download_vcrm_attachment(
 
         if not username:
             result["status"] = "missing_vcrm_username"
-            result["message"] = (
-                "VCRM username is not configured."
-            )
+            result["message"] = "VCRM username is missing."
             return result
 
         try:
@@ -79,23 +57,14 @@ def download_vcrm_attachment(
 
         if not password:
             result["status"] = "missing_vcrm_password"
-            result["message"] = (
-                "VCRM Password is empty."
-            )
+            result["message"] = "VCRM password is empty."
             return result
 
         # =========================================================
-        # 3. IMPORTANT
-        #
-        # vtiger_url is WEBSERVICE URL.
-        # VCRM UI is a DIFFERENT URL.
+        # VCRM WEB URL
         # =========================================================
 
-        vcrm_web_url = "https://crm.btpl.net"
-
-        # =========================================================
-        # 4. CREATE SESSION
-        # =========================================================
+        vcrm_url = "https://crm.btpl.net"
 
         session = requests.Session()
 
@@ -115,17 +84,18 @@ def download_vcrm_attachment(
         })
 
         # =========================================================
-        # 5. OPEN ACTUAL VCRM LOGIN PAGE
+        # STEP 1
+        # OPEN LOGIN PAGE
         # =========================================================
 
-        login_url = (
-            vcrm_web_url
+        login_page_url = (
+            vcrm_url
             + "/index.php"
         )
 
         try:
             login_page = session.get(
-                login_url,
+                login_page_url,
                 params={
                     "module": "Users",
                     "action": "Login"
@@ -146,110 +116,179 @@ def download_vcrm_attachment(
         except Exception as e:
             result["status"] = "login_page_failed"
             result["message"] = (
-                "Unable to open VCRM web login page."
+                "Could not open VCRM login page."
             )
             result["login_page_error"] = str(e)
             return result
 
         # =========================================================
-        # 6. LOGIN
+        # STEP 2
+        # ACTUAL AUTHENTICATION
+        #
+        # IMPORTANT:
+        # Login.php = login page
+        # Authenticate.php = authentication
         # =========================================================
+
+        authenticate_url = (
+            vcrm_url
+            + "/index.php"
+        )
 
         login_data = {
             "module": "Users",
-            "action": "Login",
+            "action": "Authenticate",
+            "username": username,
+            "user_name": username,
             "login_user_name": username,
-            "login_password": password
+            "user_password": password,
+            "login_password": password,
+            "Login": "Login"
         }
 
         try:
-            login_response = session.post(
-                login_url,
+            auth_response = session.post(
+                authenticate_url,
                 data=login_data,
+                headers={
+                    "Referer": login_page.url
+                },
                 verify=False,
                 timeout=30,
-                allow_redirects=True
+                allow_redirects=False
             )
 
             result["login_status_code"] = (
-                login_response.status_code
+                auth_response.status_code
             )
 
-            result["login_final_url"] = (
-                str(login_response.url or "")
+            result["login_location"] = (
+                auth_response.headers.get(
+                    "Location",
+                    ""
+                )
             )
 
         except Exception as e:
-            result["status"] = "login_request_failed"
+            result["status"] = "authentication_request_failed"
             result["message"] = (
-                "VCRM web login request failed."
+                "VCRM authentication request failed."
             )
             result["login_error"] = str(e)
             return result
 
         # =========================================================
-        # 7. SESSION COOKIE
+        # STEP 3
+        # SESSION COOKIE
         # =========================================================
-
-        cookie_count = 0
 
         try:
-            cookie_count = len(session.cookies)
+            result["session_cookie_count"] = len(
+                session.cookies
+            )
         except Exception:
-            cookie_count = 0
-
-        result["session_cookie_count"] = cookie_count
+            result["session_cookie_count"] = 0
 
         # =========================================================
-        # 8. CHECK LOGIN
+        # STEP 4
+        # FOLLOW AUTH REDIRECT
         # =========================================================
 
-        login_html = (
-            login_response.text
-            if login_response.text
+        location = (
+            auth_response.headers.get(
+                "Location",
+                ""
+            )
+            or ""
+        ).strip()
+
+        if location:
+            if location.startswith("http"):
+                next_url = location
+            elif location.startswith("/"):
+                next_url = (
+                    vcrm_url
+                    + location
+                )
+            else:
+                next_url = (
+                    vcrm_url
+                    + "/"
+                    + location
+                )
+        else:
+            next_url = (
+                vcrm_url
+                + "/index.php"
+            )
+
+        try:
+            home_response = session.get(
+                next_url,
+                verify=False,
+                timeout=30,
+                allow_redirects=True
+            )
+
+            result["login_final_url"] = (
+                str(home_response.url or "")
+            )
+
+            result["login_final_status"] = (
+                home_response.status_code
+            )
+
+        except Exception as e:
+            result["status"] = "post_login_request_failed"
+            result["message"] = (
+                "VCRM session was created but "
+                "post-login page could not be opened."
+            )
+            result["post_login_error"] = str(e)
+            return result
+
+        # =========================================================
+        # STEP 5
+        # CHECK WHETHER STILL LOGIN PAGE
+        # =========================================================
+
+        home_html = (
+            home_response.text
+            if home_response.text
             else ""
         )
 
-        login_lower = login_html.lower()
+        home_lower = home_html.lower()
 
-        login_failed = False
+        still_login = False
 
         if (
-            "login_user_name" in login_lower
-            and "login_password" in login_lower
+            "login_user_name" in home_lower
+            and "login_password" in home_lower
         ):
-            login_failed = True
+            still_login = True
 
-        if "invalid username" in login_lower:
-            login_failed = True
+        if (
+            "error=login"
+            in str(home_response.url or "").lower()
+        ):
+            still_login = True
 
-        if "invalid password" in login_lower:
-            login_failed = True
-
-        if "invalid username or password" in login_lower:
-            login_failed = True
-
-        if login_failed:
+        if still_login:
             result["status"] = "vcrm_login_failed"
             result["message"] = (
-                "VCRM web login failed. "
-                "Check username and password."
-            )
-            return result
-
-        if cookie_count == 0:
-            result["status"] = "vcrm_session_not_created"
-            result["message"] = (
-                "VCRM web login did not create a session cookie."
+                "VCRM rejected the web authentication. "
+                "The session is not authenticated."
             )
             return result
 
         # =========================================================
-        # 9. DOCUMENT DETAIL
+        # STEP 6
+        # OPEN DOCUMENT
         # =========================================================
 
         detail_url = (
-            vcrm_web_url
+            vcrm_url
             + "/index.php"
         )
 
@@ -278,7 +317,7 @@ def download_vcrm_attachment(
         except Exception as e:
             result["status"] = "document_detail_failed"
             result["message"] = (
-                "Unable to open VCRM document detail."
+                "Could not open VCRM document."
             )
             result["detail_error"] = str(e)
             return result
@@ -291,27 +330,28 @@ def download_vcrm_attachment(
 
         detail_lower = detail_html.lower()
 
-        # =========================================================
-        # 10. SESSION CHECK
-        # =========================================================
-
         if (
             "login_user_name" in detail_lower
             and "login_password" in detail_lower
         ):
             result["status"] = "session_not_authenticated"
             result["message"] = (
-                "VCRM redirected to login page. "
-                "The web session was not authenticated."
+                "VCRM redirected to login after authentication."
             )
             return result
 
         # =========================================================
-        # 11. DOWNLOAD
+        # STEP 7
+        # ACTUAL DOWNLOAD
+        #
+        # CONFIRMED:
+        # document_id = 33
+        # file_id     = 34
+        # folder_id   = not required
         # =========================================================
 
         download_url = (
-            vcrm_web_url
+            vcrm_url
             + "/index.php"
         )
 
@@ -319,12 +359,13 @@ def download_vcrm_attachment(
             "module": "Documents",
             "action": "DownloadFile",
             "record": str(document_id),
-            "fileid": str(file_id),
-            "name": str(file_name)
+            "fileid": str(file_id)
         }
 
         if folder_id:
             download_params["folderid"] = str(folder_id)
+
+        download_params["name"] = str(file_name)
 
         try:
             download_response = session.get(
@@ -344,7 +385,8 @@ def download_vcrm_attachment(
             return result
 
         # =========================================================
-        # 12. RESPONSE INFO
+        # STEP 8
+        # RESPONSE
         # =========================================================
 
         result["status_code"] = (
@@ -367,7 +409,8 @@ def download_vcrm_attachment(
         )
 
         # =========================================================
-        # 13. HTTP ERROR
+        # STEP 9
+        # CHECK HTTP
         # =========================================================
 
         if download_response.status_code != 200:
@@ -379,10 +422,6 @@ def download_vcrm_attachment(
             )
             return result
 
-        # =========================================================
-        # 14. EMPTY
-        # =========================================================
-
         if not download_response.content:
             result["status"] = "empty_attachment"
             result["message"] = (
@@ -391,7 +430,8 @@ def download_vcrm_attachment(
             return result
 
         # =========================================================
-        # 15. HTML CHECK
+        # STEP 10
+        # HTML CHECK
         # =========================================================
 
         content_type = (
@@ -421,19 +461,20 @@ def download_vcrm_attachment(
             return result
 
         # =========================================================
-        # 16. SUCCESS
+        # SUCCESS
         # =========================================================
-
-        file_content = base64.b64encode(
-            download_response.content
-        ).decode("ascii")
 
         result["success"] = True
         result["status"] = "success"
         result["message"] = (
             "VCRM attachment downloaded successfully."
         )
-        result["file_content"] = file_content
+
+        result["file_content"] = (
+            base64.b64encode(
+                download_response.content
+            ).decode("ascii")
+        )
 
         return result
 
