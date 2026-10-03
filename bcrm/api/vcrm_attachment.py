@@ -144,7 +144,7 @@ def download_vcrm_attachment(
             + "/index.php"
         )
 
-                login_data = {
+        login_data = {
             "module": "Users",
             "action": "Authenticate",
             "return_module": "Users",
@@ -187,6 +187,7 @@ def download_vcrm_attachment(
             )
             result["login_error"] = str(e)
             return result
+
         # =========================================================
         # STEP 3
         # SESSION COOKIE
