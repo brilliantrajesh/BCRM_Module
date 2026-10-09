@@ -1,0 +1,5 @@
+/* BCRM: Hide Home and Login navbar items on the Job Application page */
+body[data-path^="job_application"] .navbar a[href="/"],
+body[data-path^="job_application"] .navbar a[href="/login"] {
+    display: none !important;
+}

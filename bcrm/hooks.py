@@ -262,3 +262,10 @@ doc_events = {
         "on_update": "bcrm.api.app_version.user_version_updated"
     }
 }
+
+webform_include_js = {"Job Applicant": "public/js/job_application.js"}
+
+# Job Opening website template override
+override_doctype_class = {
+    "Job Opening": "bcrm.overrides.job_opening.BCRMJobOpening",
+}
