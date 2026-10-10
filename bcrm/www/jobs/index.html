@@ -76,6 +76,7 @@
 				<div class="ml-auto flex align-items-center">
 					<div class="btn-group border h-100" style="border-radius: 8px">
 
+						{% if frappe.session.user != "Guest" %}
 						<!-- Sort -->
 						{% set sort = frappe.form_dict.sort %}
 						<button id="sort" class="btn btn-default btn-order bg-white">
@@ -94,6 +95,7 @@
 						>
 							<span class="text-14">{{ _("Posting Date") }}</span>
 						</div>
+						{% endif %}
 
 						<!-- Mobile Filter Button -->
 						<button

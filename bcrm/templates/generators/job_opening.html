@@ -72,7 +72,7 @@
 				</div>
 			{% endif %}
 
-			{%- if department -%}
+			{%- if department and frappe.session.user != "Guest" -%}
 				<div class="col-12 col-md-4 mb-6 mb-md-8">
 					<div class="flex flex-row align-items-center">
 						<div class="rounded-circle p-4" style="background: var(--blue-50)">
