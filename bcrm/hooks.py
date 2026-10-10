@@ -269,3 +269,7 @@ webform_include_js = {"Job Applicant": "public/js/job_application.js"}
 override_doctype_class = {
     "Job Opening": "bcrm.overrides.job_opening.BCRMJobOpening",
 }
+
+
+# Guest Jobs and Job Application navbar behavior
+web_include_js = ["/assets/bcrm/js/guest_jobs_navbar.js"]
