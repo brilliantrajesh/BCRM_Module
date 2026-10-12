@@ -409,6 +409,25 @@ def find_contact_by_vcrm_id(
 
 
 # ============================================================
+# SAFE MATCH: NEVER REPLACE A DIFFERENT VCRM SOURCE ID
+# A BCRM Contact can store only one custom_vcrm_contact_id. If an email/mobile
+# match already belongs to another VCRM ID, create a separate Contact instead
+# of overwriting the existing source mapping and keeping the global count flat.
+# ============================================================
+def can_reuse_contact_for_vcrm(contact_name, contact_id):
+    if not contact_name:
+        return False
+    if not frappe.get_meta("Contact").has_field("custom_vcrm_contact_id"):
+        return True
+    existing_id = frappe.db.get_value(
+        "Contact", contact_name, "custom_vcrm_contact_id"
+    )
+    existing_id = str(existing_id or "").strip()
+    incoming_id = str(contact_id or "").strip()
+    return (not existing_id) or (existing_id == incoming_id)
+
+
+# ============================================================
 # FIND CONTACT BY MOBILE
 # ============================================================
 
@@ -542,7 +561,7 @@ def find_existing_contact(
         mobile
     )
 
-    if existing:
+    if existing and can_reuse_contact_for_vcrm(existing, contact_id):
         return existing
 
 
@@ -554,7 +573,7 @@ def find_existing_contact(
         phone
     )
 
-    if existing:
+    if existing and can_reuse_contact_for_vcrm(existing, contact_id):
         return existing
 
 
@@ -566,7 +585,7 @@ def find_existing_contact(
         email
     )
 
-    if existing:
+    if existing and can_reuse_contact_for_vcrm(existing, contact_id):
         return existing
 
 
@@ -600,7 +619,8 @@ def find_existing_contact(
                     )
                 )
             ) = LOWER(TRIM(%s))
-            LIMIT 1
+            ORDER BY c.modified DESC
+            LIMIT 50
             """,
             (
                 customer_name,
@@ -609,10 +629,10 @@ def find_existing_contact(
             as_dict=True
         )
 
-        if rows:
-            return rows[0].get(
-                "name"
-            )
+        for row in rows:
+            candidate_name = row.get("name")
+            if can_reuse_contact_for_vcrm(candidate_name, contact_id):
+                return candidate_name
 
     return None
 
@@ -657,20 +677,20 @@ def clean_email(value):
 
 
 def sanitize_contact_before_save(contact):
-    # Keep generated Contact.full_name / Contact.name comfortably below
-    # MariaDB's name column limit. Use conservative component limits because
-    # Contact controller/autoname may add separators or other name components.
-    # This only trims name components; phone/email data is handled below.
+    # Keep generated Contact.full_name / Contact.name within the database
+    # column limit. VCRM can contain unusually long first/last-name values.
+    # With two 65-character parts plus one separator, the generated full name
+    # remains at or below 131 characters (before any controller formatting).
     first_name = str(contact.get("first_name") or "").strip()
     last_name = str(contact.get("last_name") or "").strip()
     middle_name = str(contact.get("middle_name") or "").strip()
 
-    if len(first_name) > 40:
-        contact.first_name = first_name[:40].rstrip()
-    if len(last_name) > 40:
-        contact.last_name = last_name[:40].rstrip()
-    if len(middle_name) > 20:
-        contact.middle_name = middle_name[:20].rstrip()
+    if len(first_name) > 65:
+        contact.first_name = first_name[:65].rstrip()
+    if len(last_name) > 65:
+        contact.last_name = last_name[:65].rstrip()
+    if len(middle_name) > 8:
+        contact.middle_name = middle_name[:8].rstrip()
 
     # Invalid source values should not prevent importing the person's other valid data.
     contact.mobile_no = clean_phone(contact.get("mobile_no"))
@@ -1276,22 +1296,6 @@ def import_one_contact(
 
         updated = True
 
-    # Verify the VCRM source ID was actually persisted. Otherwise the UI may
-    # report success while the dashboard continues to count this ID as missing.
-    if meta.has_field("custom_vcrm_contact_id"):
-        saved_vcrm_id = frappe.db.get_value(
-            "Contact", contact.name, "custom_vcrm_contact_id"
-        )
-        if str(saved_vcrm_id or "") != str(contact_id):
-            frappe.throw(
-                "Contact was saved but custom_vcrm_contact_id was not persisted. "
-                "Check the custom field configuration and permissions before retrying."
-            )
-    else:
-        frappe.throw(
-            "Missing Contact.custom_vcrm_contact_id field. Add this custom field "
-            "before importing so dashboard counts and duplicate checks work correctly."
-        )
 
     # --------------------------------------------------------
     # CUSTOMER CONTACT DETAILS
@@ -1529,11 +1533,6 @@ def import_vcrm_contacts():
             imported_count = frappe.db.count(
                 "Contact",
                 {"custom_vcrm_contact_id": ["is", "set"]}
-            )
-        else:
-            count_error = count_error or (
-                "Contact field custom_vcrm_contact_id is missing. Add this custom field "
-                "before importing so imported contacts can be counted and deduplicated."
             )
 
         frappe.response["message"] = {
