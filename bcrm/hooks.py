@@ -273,3 +273,16 @@ override_doctype_class = {
 
 # Guest Jobs and Job Application navbar behavior
 web_include_js = ["/assets/bcrm/js/guest_jobs_navbar.js"]
+
+
+# Custom Interview feedback dialog
+doctype_js = {
+    "Interview": "public/js/interview_guest_name.js",
+}
+
+
+# Guest Name validation for Interview Feedback
+override_whitelisted_methods = {
+    "hrms.hr.doctype.interview.interview.create_interview_feedback":
+        "bcrm.api.interview_feedback.create_interview_feedback",
+}

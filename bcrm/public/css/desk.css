@@ -1,3 +1,8 @@
 .bcrm-hidden-menu-item {
     display: none !important;
 }
+
+/* Hide app subtitle below the module name in Desk sidebar */
+.sidebar-header .header-subtitle {
+    display: none !important;
+}
