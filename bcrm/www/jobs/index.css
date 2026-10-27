@@ -128,3 +128,147 @@ body.jobs-page .other-badge {
 body.jobs-page.guest-jobs-page a.btn-login-area[href="/login"] {
     display: none !important;
 }
+
+/* Job listing cards: responsive grid and consistent card layout */
+body.jobs-page .col-lg-9 > .row:last-of-type {
+    align-items: stretch;
+}
+
+body.jobs-page .col-lg-9 .row > .col-sm-6 {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+}
+
+body.jobs-page .col-lg-9 .row > .col-sm-6 > .card {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+body.jobs-page .job-title-full {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: break-word;
+    word-break: normal;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+}
+
+body.jobs-page .job-card-footer {
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+@media (max-width: 767.98px) {
+    body.jobs-page .col-lg-9 .row > .col-sm-6 {
+        width: 100%;
+    }
+}
+
+/* Final jobs card layout fixes */
+body.jobs-page .col-lg-9 .row > .col-sm-6 {
+    display: flex;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+body.jobs-page .col-lg-9 .row > .col-sm-6 > .card {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overflow: hidden;
+}
+
+body.jobs-page .col-lg-9 .row > .col-sm-6 > .card > .p-6 {
+    padding: 20px 22px !important;
+}
+
+body.jobs-page .job-title-full {
+    display: block;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
+}
+
+body.jobs-page .job-applications-footer {
+    margin-top: auto;
+    padding: 10px 22px;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+body.jobs-page .job-applications-footer .applications-label {
+    display: inline;
+    font-size: 13px;
+}
+
+body.jobs-page .job-applications-footer .applications-count {
+    display: inline;
+    color: #111827;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+@media (max-width: 767.98px) {
+    body.jobs-page .col-lg-9 .row > .col-sm-6 {
+        width: 100%;
+    }
+}
+
+/* Apply Now button on job cards */
+body.jobs-page .job-apply-now {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 14px;
+    padding: 8px 18px;
+    background: #343a40;
+    color: #ffffff !important;
+    border: 1px solid #343a40;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-decoration: none !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+body.jobs-page .job-apply-now:hover,
+body.jobs-page .job-apply-now:focus {
+    background: #212529;
+    border-color: #212529;
+    color: #ffffff !important;
+    text-decoration: none !important;
+}
+
+body.jobs-page .job-apply-now:focus-visible {
+    outline: 2px solid #6c757d;
+    outline-offset: 2px;
+}
+
+/* Align Apply Now button to the right inside job cards */
+body.jobs-page .job-apply-now {
+    display: flex;
+    width: fit-content;
+    margin: 14px 0 0 auto;
+}
