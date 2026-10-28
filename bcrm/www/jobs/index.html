@@ -6,6 +6,109 @@
 {% endblock header %}
 
 {% block page_content %}
+
+<style id="compact-job-card-fix">
+
+.card[name="card"] > .p-4 {
+    padding: 10px !important;
+}
+
+.card[name="card"] .job-title-full {
+    font-size: 19px !important;
+    line-height: 1.25 !important;
+    margin-bottom: 6px !important;
+}
+
+/* Put title/badge on the left and Apply Now on the right */
+.card[name="card"] > .p-4 > div {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 0 !important;
+}
+
+.card[name="card"] .job-title-full {
+    flex: 0 0 100% !important;
+}
+
+.card[name="card"] .job-apply-now {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-left: auto !important;
+    margin-top: 0 !important;
+    padding: 5px 10px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    font-weight: 500 !important;
+    border: 1px solid #59616a !important;
+    border-radius: 5px !important;
+    background: #59616a !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+.card[name="card"] .job-apply-now:hover {
+    background: #454c54 !important;
+    border-color: #454c54 !important;
+}
+
+.card[name="card"] .job-applications-footer {
+    padding: 8px 10px !important;
+}
+
+
+/* Job card highlight theme */
+.card[name="card"] {
+    background-color: #f4f8ff !important;
+    border: 1px solid #d6e4f5 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 6px rgba(30, 64, 120, 0.05) !important;
+}
+
+.card[name="card"] > .p-4 {
+    background-color: #f4f8ff !important;
+}
+
+.card[name="card"] .job-applications-footer {
+    background-color: #eaf1fb !important;
+    border-top: 1px solid #d6e4f5 !important;
+}
+
+
+/* Clearly visible job card borders */
+.card[name="card"] {
+    border: 1.5px solid #9bb9df !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(42, 76, 120, 0.08) !important;
+}
+
+.card[name="card"] > .p-4 {
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.card[name="card"] .job-applications-footer {
+    border-top: 1px solid #c2d4eb !important;
+}
+
+/* Apply Now dark hover effect */
+
+/* Apply Now dark hover effect */
+.card[name="card"] .job-apply-now:hover,
+.card[name="card"] .job-apply-now:focus-visible {
+    background-color: #171717 !important;
+    border-color: #171717 !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+</style>
+
 <meta
 	id="data"
 	data-filters="{{ all_filters }}"
@@ -126,16 +229,16 @@
 
 		<div class="row">
 			{% for jo in job_openings %}
-			<div class="mb-8 col-sm-6">
+			<div class="col-12 col-md-6 col-lg-4 mb-4">
 				<div
 					id="{{ jo.route }}"
 					name="card"
 					class="card border h-100 flex flex-col"
 					role="button"
 				>
-					<div class="p-6">
+					<div class="p-4">
 
-                                                <div class="mb-5">
+                                                <div class="mb-3">
                                                         <h4
                                                                 class="mt-0 mb-2 jobs-page job-title-full"
                                                                 title="{{ jo.job_title }}"
