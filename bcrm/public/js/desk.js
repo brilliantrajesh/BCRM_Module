@@ -67,6 +67,7 @@ window.BCRM_Agent.is_running = function () {
     var BTPL_APP_USER = "tracker@brillianttechnologies.com";
     var VERSION_LABEL_ID = "bcrm-common-app-version";
     var VERSION_VALUE_ID = "bcrm-common-app-version-value";
+    var current_version = "";
 
     function get_user_area() {
         return document.querySelector(".avatar-name-email");
@@ -108,23 +109,28 @@ window.BCRM_Agent.is_running = function () {
         }
     }
 
-    function load_app_version() {
-        frappe.call({
-            method: "bcrm.api.app_version.get_app_version"
-        }).then(function (response) {
-            render_app_version(response.message);
-        });
+    function ensure_version_label() {
+        if (current_version) {
+            render_app_version(current_version);
+        }
     }
 
-    // Initial version load
-    load_app_version();
+    // Initial version load + keep label alive (v16 re-renders the sidebar)
+    frappe.call({
+        method: "bcrm.api.app_version.get_app_version"
+    }).then(function (response) {
+        current_version = response.message || "";
+        ensure_version_label();
+    });
+    setInterval(ensure_version_label, 1000);
 
     // Silent update for all connected users
     frappe.realtime.on(
         "bcrm_app_version_updated",
         function (data) {
             if (data && data.version) {
-                render_app_version(data.version);
+                current_version = data.version;
+                render_app_version(current_version);
             }
         }
     );
