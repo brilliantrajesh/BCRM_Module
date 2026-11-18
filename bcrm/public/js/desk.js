@@ -135,3 +135,37 @@ window.BCRM_Agent.is_running = function () {
         }
     );
 })();
+
+/* BCRM v16 avatar menu hiding (text based, selector independent) */
+(function () {
+    "use strict";
+
+    var HIDE = [
+        "Toggle Theme",
+        "About",
+        "Frappe Support",
+        "Reset Desktop Layout",
+        "Reset to Default",
+        "Manage Billing"
+    ];
+    var MENU_SEL = '[role="menu"],[class*="menu"],[class*="dropdown"],[class*="popover"]';
+
+    function hide_v16_items() {
+        document.querySelectorAll("body *").forEach(function (el) {
+            if (el.children.length !== 0) return;
+            if (HIDE.indexOf(el.textContent.trim()) === -1) return;
+            if (!el.closest(MENU_SEL)) return;
+
+            // climb to the row: the ancestor whose parent holds several rows
+            var row = el;
+            while (row.parentElement &&
+                   row.parentElement.children.length < 3 &&
+                   row.parentElement.closest(MENU_SEL)) {
+                row = row.parentElement;
+            }
+            row.classList.add("bcrm-hidden-menu-item");
+        });
+    }
+
+    setInterval(hide_v16_items, 300);
+})();
