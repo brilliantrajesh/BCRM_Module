@@ -11,9 +11,10 @@
     }
 
     function hide(el) {
-        // version label / user header protect cheyyadam
+        // user header / version label protect cheyyadam
         if (el.classList.contains("avatar-name-email") ||
-            el.querySelector("#bcrm-common-app-version")) {
+            el.querySelector("#bcrm-common-app-version") ||
+            el.querySelector(".avatar-name-email")) {
             return;
         }
         el.classList.add("bcrm-hidden-menu-item");
@@ -49,6 +50,28 @@
 
     setInterval(keep_only_logout, 300);
     keep_only_logout();
+
+    // Debug helper: avatar menu open chesi console lo BCRM_debug_menu() run cheyyi
+    window.BCRM_debug_menu = function () {
+        var rows = [];
+        document.querySelectorAll(ROOT_SEL).forEach(function (root) {
+            if (!root.offsetParent && root.style.display === "none") return;
+            root.querySelectorAll("*").forEach(function (el) {
+                if (el.children.length !== 0) return;
+                var t = (el.textContent || "").trim();
+                if (!t) return;
+                rows.push({
+                    label: t,
+                    tag: el.tagName,
+                    class: el.className,
+                    parent_class: el.parentElement ? el.parentElement.className : "",
+                    hidden: el.closest(".bcrm-hidden-menu-item") ? "yes" : "no"
+                });
+            });
+        });
+        console.table(rows);
+        return rows;
+    };
 })();
 
 /* BCRM Local Agent Bridge */
