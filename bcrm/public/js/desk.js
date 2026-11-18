@@ -1,33 +1,54 @@
+/* BCRM: Avatar menu lo "Log out" matrame undali, migatha anni hide */
 (function () {
     "use strict";
 
-    var HIDE_LABELS = [
-        "Edit Profile",
-        "Toggle Theme",
-        "About",
-        "Frappe Support",
-        "Reset to Default",
-        "Reset Desktop Layout",
-        "Manage Billing"
-    ];
+    var KEEP_LABELS = ["Log out", "Logout", "Log Out"];
+    var ROOT_SEL = '[role="menu"], .dropdown-menu, .frappe-menu, .context-menu, [class*="popover"]';
 
-    function hide_items_in(menu) {
-        menu.querySelectorAll(".dropdown-menu-item").forEach(function (item) {
-            var titleEl = item.querySelector(".menu-item-title");
-            if (!titleEl) return;
-            var label = titleEl.textContent.trim();
-            if (HIDE_LABELS.some(function (l) { return label.indexOf(l) === 0; })) {
-                item.classList.add("bcrm-hidden-menu-item");
+    function is_keep(text) {
+        text = (text || "").trim();
+        return KEEP_LABELS.some(function (l) { return text.indexOf(l) === 0; });
+    }
+
+    function hide(el) {
+        // version label / user header protect cheyyadam
+        if (el.classList.contains("avatar-name-email") ||
+            el.querySelector("#bcrm-common-app-version")) {
+            return;
+        }
+        el.classList.add("bcrm-hidden-menu-item");
+        el.style.setProperty("display", "none", "important");
+    }
+
+    function keep_only_logout() {
+        document.querySelectorAll("body *").forEach(function (el) {
+            if (el.children.length !== 0) return;
+            if (!is_keep(el.textContent)) return;
+
+            var root = el.closest(ROOT_SEL);
+            if (!root) return;
+
+            // logout row ni find cheyyadam
+            var row = el;
+            while (row.parentElement &&
+                   row.parentElement !== root &&
+                   row.parentElement.children.length < 3) {
+                row = row.parentElement;
+            }
+
+            // row nundi menu root varaku, prathi level lo siblings hide
+            var node = row;
+            while (node && node !== root && node.parentElement) {
+                Array.prototype.forEach.call(node.parentElement.children, function (sib) {
+                    if (sib !== node) hide(sib);
+                });
+                node = node.parentElement;
             }
         });
     }
 
-    function process_all_menus() {
-        document.querySelectorAll(".frappe-menu.context-menu").forEach(hide_items_in);
-    }
-
-    setInterval(process_all_menus, 300);
-    process_all_menus();
+    setInterval(keep_only_logout, 300);
+    keep_only_logout();
 })();
 
 /* BCRM Local Agent Bridge */
@@ -64,7 +85,6 @@ window.BCRM_Agent.is_running = function () {
 (function () {
     "use strict";
 
-    var BTPL_APP_USER = "tracker@brillianttechnologies.com";
     var VERSION_LABEL_ID = "bcrm-common-app-version";
     var VERSION_VALUE_ID = "bcrm-common-app-version-value";
     var current_version = "";
@@ -81,29 +101,20 @@ window.BCRM_Agent.is_running = function () {
             return;
         }
 
-        var version_element =
-            document.getElementById(VERSION_LABEL_ID);
+        var version_element = document.getElementById(VERSION_LABEL_ID);
 
         if (!version_element) {
             version_element = document.createElement("span");
             version_element.id = VERSION_LABEL_ID;
-            version_element.className =
-                "text-secondary text-truncate";
-
+            version_element.className = "text-secondary text-truncate";
             version_element.style.cssText =
                 "display:block;margin-top:2px;font-size:10px;";
-
             version_element.innerHTML =
-                'BTPL Ver <span id="' +
-                VERSION_VALUE_ID +
-                '"></span>';
-
+                'BTPL Ver <span id="' + VERSION_VALUE_ID + '"></span>';
             user_area.appendChild(version_element);
         }
 
-        var version_value =
-            document.getElementById(VERSION_VALUE_ID);
-
+        var version_value = document.getElementById(VERSION_VALUE_ID);
         if (version_value) {
             version_value.textContent = clean_version;
         }
@@ -125,47 +136,10 @@ window.BCRM_Agent.is_running = function () {
     setInterval(ensure_version_label, 1000);
 
     // Silent update for all connected users
-    frappe.realtime.on(
-        "bcrm_app_version_updated",
-        function (data) {
-            if (data && data.version) {
-                current_version = data.version;
-                render_app_version(current_version);
-            }
+    frappe.realtime.on("bcrm_app_version_updated", function (data) {
+        if (data && data.version) {
+            current_version = data.version;
+            render_app_version(current_version);
         }
-    );
-})();
-
-/* BCRM v16 avatar menu hiding (text based, selector independent) */
-(function () {
-    "use strict";
-
-    var HIDE = [
-        "Toggle Theme",
-        "About",
-        "Frappe Support",
-        "Reset Desktop Layout",
-        "Reset to Default",
-        "Manage Billing"
-    ];
-    var MENU_SEL = '[role="menu"],[class*="menu"],[class*="dropdown"],[class*="popover"]';
-
-    function hide_v16_items() {
-        document.querySelectorAll("body *").forEach(function (el) {
-            if (el.children.length !== 0) return;
-            if (HIDE.indexOf(el.textContent.trim()) === -1) return;
-            if (!el.closest(MENU_SEL)) return;
-
-            // climb to the row: the ancestor whose parent holds several rows
-            var row = el;
-            while (row.parentElement &&
-                   row.parentElement.children.length < 3 &&
-                   row.parentElement.closest(MENU_SEL)) {
-                row = row.parentElement;
-            }
-            row.classList.add("bcrm-hidden-menu-item");
-        });
-    }
-
-    setInterval(hide_v16_items, 300);
+    });
 })();
