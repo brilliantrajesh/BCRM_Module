@@ -1,74 +1,49 @@
-/* BCRM: Avatar menu lo "Log out" matrame undali, migatha anni hide */
+/* BCRM: Avatar menu lo Logout + Toggle Width matrame undali, migatha anni hide */
 (function () {
     "use strict";
 
-    var KEEP_LABELS = ["Log out", "Logout", "Log Out"];
-    var ROOT_SEL = '[role="menu"], .dropdown-menu, .frappe-menu, .context-menu, [class*="popover"]';
+    var KEEP = [/^log\s?out$/i, /toggle.*width/i];
 
-    function is_keep(text) {
-        text = (text || "").trim();
-        return KEEP_LABELS.some(function (l) { return text.indexOf(l) === 0; });
-    }
+    function keep_only_allowed() {
+        document.querySelectorAll(".es-menu").forEach(function (menu) {
+            menu.querySelectorAll(".es-menu__item").forEach(function (item) {
+                var label = item.querySelector(".es-menu__label");
+                var text = ((label || item).textContent || "").trim();
+                var keep = KEEP.some(function (re) { return re.test(text); });
 
-    function hide(el) {
-        // user header / version label protect cheyyadam
-        if (el.classList.contains("avatar-name-email") ||
-            el.querySelector("#bcrm-common-app-version") ||
-            el.querySelector(".avatar-name-email")) {
-            return;
-        }
-        el.classList.add("bcrm-hidden-menu-item");
-        el.style.setProperty("display", "none", "important");
-    }
+                if (keep) {
+                    item.style.removeProperty("display");
+                } else {
+                    item.style.setProperty("display", "none", "important");
+                }
+            });
 
-    function keep_only_logout() {
-        document.querySelectorAll("body *").forEach(function (el) {
-            if (el.children.length !== 0) return;
-            if (!is_keep(el.textContent)) return;
-
-            var root = el.closest(ROOT_SEL);
-            if (!root) return;
-
-            // logout row ni find cheyyadam
-            var row = el;
-            while (row.parentElement &&
-                   row.parentElement !== root &&
-                   row.parentElement.children.length < 3) {
-                row = row.parentElement;
-            }
-
-            // row nundi menu root varaku, prathi level lo siblings hide
-            var node = row;
-            while (node && node !== root && node.parentElement) {
-                Array.prototype.forEach.call(node.parentElement.children, function (sib) {
-                    if (sib !== node) hide(sib);
-                });
-                node = node.parentElement;
-            }
-        });
-    }
-
-    setInterval(keep_only_logout, 300);
-    keep_only_logout();
-
-    // Debug helper: avatar menu open chesi console lo BCRM_debug_menu() run cheyyi
-    window.BCRM_debug_menu = function () {
-        var rows = [];
-        document.querySelectorAll(ROOT_SEL).forEach(function (root) {
-            if (!root.offsetParent && root.style.display === "none") return;
-            root.querySelectorAll("*").forEach(function (el) {
-                if (el.children.length !== 0) return;
-                var t = (el.textContent || "").trim();
-                if (!t) return;
-                rows.push({
-                    label: t,
-                    tag: el.tagName,
-                    class: el.className,
-                    parent_class: el.parentElement ? el.parentElement.className : "",
-                    hidden: el.closest(".bcrm-hidden-menu-item") ? "yes" : "no"
-                });
+            // visible item lekapothe aa group ni kuda hide
+            menu.querySelectorAll(".es-menu__group").forEach(function (group) {
+                var has_visible = Array.prototype.some.call(
+                    group.querySelectorAll(".es-menu__item"),
+                    function (i) { return i.style.display !== "none"; }
+                );
+                group.style.display = has_visible ? "" : "none";
             });
         });
+    }
+
+    setInterval(keep_only_allowed, 300);
+    keep_only_allowed();
+
+    // Debug: avatar menu open chesi console lo BCRM_debug_menu() run cheyyi
+    window.BCRM_debug_menu = function () {
+        var rows = Array.prototype.map.call(
+            document.querySelectorAll(".es-menu .es-menu__item"),
+            function (i) {
+                var l = i.querySelector(".es-menu__label");
+                return {
+                    label: (l ? l.textContent : i.textContent).trim(),
+                    hidden: i.style.display === "none" ? "yes" : "no"
+                };
+            }
+        );
         console.table(rows);
         return rows;
     };
